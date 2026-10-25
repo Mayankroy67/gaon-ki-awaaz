@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaon Ki Awaaz</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--p:#1b6b4a;--a:#e8a317;--bg:#f6f4ee;--t:#222}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--p);color:#fff;padding:12px 16px}
+header h1{margin:0;font-size:20px}header p{margin:2px 0 0;font-size:13px;opacity:.9}
+nav{display:flex;background:#fff;position:sticky;top:0;z-index:5;box-shadow:0 1px 4px #0002}
+nav button{flex:1;padding:12px;border:0;background:none;font-size:15px;cursor:pointer;border-bottom:3px solid transparent}
+nav button.on{border-color:var(--a);font-weight:700;color:var(--p)}
+main{max-width:760px;margin:auto;padding:12px}
+section{display:none}section.on{display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px #0002}
+label{display:block;font-size:13px;font-weight:600;margin:8px 0 3px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;background:#fff}
+button.b{background:var(--p);color:#fff;border:0;padding:11px 14px;border-radius:8px;font-size:15px;cursor:pointer;margin-top:10px}
+button.b.alt{background:#fff;color:var(--p);border:1px solid var(--p)}
+button.b:disabled{opacity:.5}
+.row{display:flex;gap:8px;align-items:flex-end}.row>input,.row>select{flex:1}.row button{margin:0}
+#map{height:300px;border-radius:12px;margin-bottom:12px}
+.small{font-size:12px;color:#666}
+.ba{position:relative;--x:50%;line-height:0;border-radius:8px;overflow:hidden;min-width:220px}
+.ba img{width:100%;display:block}
+.ba .b2{position:absolute;inset:0;clip-path:inset(0 0 0 var(--x))}
+.ba input{position:absolute;left:5%;width:90%;bottom:6px;padding:0}
+.tag{display:inline-block;background:var(--a);color:#222;font-size:12px;padding:2px 8px;border-radius:99px;font-weight:600}
+video,audio{width:100%;border-radius:8px;margin-top:6px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.acts button,.acts a{flex:1;text-align:center;text-decoration:none;font-size:14px;padding:9px;border-radius:8px;border:1px solid var(--p);background:#fff;color:var(--p);cursor:pointer}
+.acts .wa{background:#25d366;color:#fff;border-color:#25d366}
+#msg,#msg2{font-size:13px;color:#555;margin-top:6px}
+</style>
+</head>
+<body>
+<header><h1>🏘️ Gaon Ki Awaaz</h1><p>Yaadein bachao · Awaaz uthao</p></header>
+<nav><button data-t="mem" class="on">🗺️ Yaadein</button><button data-t="voice">📢 Awaaz</button></nav>
+<main>
+
+<section id="mem" class="on">
+  <div class="card small">Map pe jagah chuno, purani photo aur apni awaaz mein kahani daalo. AI photo ko restore karega.</div>
+  <div id="map"></div>
+  <div class="card">
+    <b>Nayi yaad jodo</b>
+    <div class="small" id="pick">Map pe tap karke jagah chuno ya</div>
+    <button class="b alt" id="gps" type="button">📍 Meri location</button>
+    <label>Purani photo</label><input id="mfile" type="file" accept="image/*">
+    <label>Title</label>
+    <div class="row"><input id="mt" placeholder="e.g. Purana kuan, 1985"><button class="b alt" id="mic" type="button">🎤</button></div>
+    <label>Saal (optional)</label><input id="my" inputmode="numeric" maxlength="4" placeholder="1985">
+    <label>Kahani (awaaz mein, optional)</label>
+    <button class="b alt" id="recb" type="button">🎙️ Record karo</button>
+    <audio id="aud" controls hidden></audio>
+    <button class="b" id="madd">Yaad jodo</button><div id="msg"></div>
+  </div>
+  <div id="mlist"></div>
+</section>
+
+<section id="voice">
+  <div class="card small">Gaon ki samasya ka 15 second ka video daalo. Title aur category video pe likh jaati hai. Log "Main bhi sehmat" dabate hain, aur sabse zyada awaaz wali samasya upar aati hai.</div>
+  <div class="card">
+    <b>Nayi awaaz uthao</b>
+    <label>Video (15 sec tak dikhega)</label><input id="vfile" type="file" accept="video/*" capture="environment">
+    <label>Samasya (Hinglish mein, chhota)</label><input id="vt" maxlength="40" placeholder="Hand pump kharab hai">
+    <label>Category</label>
+    <select id="vc"><option>Sadak</option><option>Paani</option><option>Bijli</option><option>Safai</option><option>School</option><option>Health</option><option>Other</option></select>
+    <label>Jagah / Gaon</label><input id="vl" placeholder="Gaon ka naam, mohalla">
+    <button class="b" id="vadd">Awaaz daalo</button><div id="msg2"></div>
+  </div>
+  <div class="acts" style="margin-bottom:12px"><button id="memo">📄 Sarpanch ke liye summary</button></div>
+  <div id="vlist"></div>
+</section>
+
+<div class="card">
+  <button class="b" id="share">🔗 Poora board share karo</button>
+  <div id="link" class="small" style="word-break:break-all;margin-top:6px"></div>
+</div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ====== CONFIG: apna Cloudinary data yahan daalo ======
+const CLOUD = "YOUR_CLOUD_NAME";
+const PRESET = "YOUR_UNSIGNED_PRESET"; // Settings > Upload > Upload presets > Signing Mode: Unsigned
+// =======================================================
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const K = "gaon_awaaz_v1", KV = K + "_voted";
+let S = { mem: [], voice: [] }, voted = {};
+try { S = JSON.parse(localStorage.getItem(K)) || S; voted = JSON.parse(localStorage.getItem(KV)) || {}; } catch (e) {}
+const save = () => { try { localStorage.setItem(K, JSON.stringify(S)); localStorage.setItem(KV, JSON.stringify(voted)); } catch (e) {} };
+const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const dec = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+const U = (type, tr, id, ext) => `https://res.cloudinary.com/${CLOUD}/${type}/upload/${tr ? tr + "/" : ""}${id}${ext || ""}`;
+
+// shared link se data import
+try {
+  const m = location.hash.match(/^#d=(.+)$/);
+  if (m) { const d = dec(m[1]);
+    ["mem", "voice"].forEach(k => (d[k] || []).forEach(x => { if (!S[k].some(y => y.id === x.id)) S[k].push(x); })); save(); }
+} catch (e) {}
+
+async function up(file, type) {
+  if (CLOUD.startsWith("YOUR")) throw new Error("Pehle file mein CLOUD aur PRESET daalo");
+  const fd = new FormData(); fd.append("file", file); fd.append("upload_preset", PRESET);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/${type}/upload`, { method: "POST", body: fd });
+  const j = await r.json(); if (!j.public_id) throw new Error(j.error?.message || "upload fail");
+  return j.public_id;
+}
+
+// ---------- tabs ----------
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button,section").forEach(e => e.classList.remove("on"));
+  b.classList.add("on"); $("#" + b.dataset.t).classList.add("on");
+  if (b.dataset.t === "mem") setTimeout(() => map.invalidateSize(), 50);
+});
+
+// ================= YAADEIN =================
+const map = L.map("map").setView([28.6, 77.4], 11);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(map);
+let pick = null, pin = null, layer = L.layerGroup().addTo(map);
+function setPick(ll) {
+  pick = { lat: +ll.lat.toFixed(5), lng: +ll.lng.toFixed(5) };
+  if (pin) pin.setLatLng(ll); else pin = L.marker(ll).addTo(map);
+  $("#pick").textContent = `Jagah chuni: ${pick.lat}, ${pick.lng}`;
+}
+map.on("click", e => setPick(e.latlng));
+$("#gps").onclick = () => navigator.geolocation.getCurrentPosition(p => { const ll = { lat: p.coords.latitude, lng: p.coords.longitude }; setPick(ll); map.setView(ll, 15); }, () => $("#pick").textContent = "Location nahi mili, map pe tap karo.");
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) $("#mic").style.display = "none";
+else $("#mic").onclick = () => { const r = new SR(); r.lang = "hi-IN"; r.onresult = e => $("#mt").value = e.results[0][0].transcript; r.start(); };
+
+let rec, blob = null;
+$("#recb").onclick = async () => {
+  try {
+    if (rec && rec.state === "recording") { rec.stop(); return; }
+    const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ch = []; rec = new MediaRecorder(st);
+    rec.ondataavailable = e => ch.push(e.data);
+    rec.onstop = () => { blob = new Blob(ch, { type: rec.mimeType }); st.getTracks().forEach(t => t.stop());
+      $("#recb").textContent = "🎙️ Ho gayi ✓ (dobara record karo)"; $("#aud").src = URL.createObjectURL(blob); $("#aud").hidden = false; };
+    rec.start(); $("#recb").textContent = "⏹️ Rokne ke liye dabao";
+  } catch (e) { $("#msg").textContent = "Mic ki permission do."; }
+};
+
+const rest = id => U("image", "e_gen_restore/q_auto,f_auto,w_500", id);
+const restFb = id => U("image", "e_improve/e_sharpen:60/q_auto,f_auto,w_500", id);
+const baHtml = id => `<div class="ba"><img src="${U("image", "q_auto,f_auto,w_500", id)}" alt="original">
+<img class="b2" src="${rest(id)}" onerror="this.onerror=null;this.src='${restFb(id)}'" alt="restored">
+<input type="range" min="0" max="100" value="50" oninput="this.parentNode.style.setProperty('--x',this.value+'%')"></div>
+<div class="small">Slider hilao: left = original, right = AI restore</div>`;
+const memHtml = m => `<b>${esc(m.t)}</b> ${m.y ? `<span class="tag">${esc(m.y)}</span>` : ""}${baHtml(m.i)}${m.a ? `<audio controls src="${U("video", "", m.a, ".mp3")}"></audio>` : ""}`;
+
+function drawMem() {
+  layer.clearLayers();
+  S.mem.forEach(m => L.marker([m.lat, m.lng]).addTo(layer).bindPopup(memHtml(m), { minWidth: 240 }));
+  $("#mlist").innerHTML = S.mem.slice().reverse().map(m => `<div class="card">${memHtml(m)}</div>`).join("");
+}
+$("#madd").onclick = async () => {
+  const f = $("#mfile").files[0], t = $("#mt").value.trim(), msg = $("#msg");
+  if (!pick || !f || !t) { msg.textContent = "Jagah, photo aur title zaroori hain."; return; }
+  $("#madd").disabled = true; msg.textContent = "Upload ho raha hai...";
+  try {
+    const i = await up(f, "image"); const a = blob ? await up(blob, "video") : "";
+    S.mem.push({ id: "m" + Date.now(), t, y: $("#my").value.trim(), lat: pick.lat, lng: pick.lng, i, a });
+    save(); blob = null; $("#aud").hidden = true; $("#recb").textContent = "🎙️ Record karo";
+    ["#mfile", "#mt", "#my"].forEach(s => $(s).value = ""); msg.textContent = "Yaad jud gayi ✓"; drawMem();
+  } catch (e) { msg.textContent = "Error: " + e.message; }
+  $("#madd").disabled = false;
+};
+
+// ================= AWAAZ =================
+const ovl = s => encodeURIComponent(s.replace(/[^\w\s\-.!?]/g, "")).replace(/%2C/g, "%252C").replace(/%2F/g, "%252F");
+const vUrl = v => U("video", `du_15,w_480,c_limit,q_auto,f_mp4/l_text:Arial_26_bold:${ovl("[" + v.c.toUpperCase() + "] " + v.t)},co_white,b_rgb:000000b0/fl_layer_apply,g_south,y_24`, v.i, ".mp4");
+const vPoster = v => U("video", "so_0,w_480,c_limit/q_auto", v.i, ".jpg");
+
+function drawVoice() {
+  const l = S.voice.slice().sort((a, b) => b.v - a.v);
+  $("#vlist").innerHTML = l.map(v => {
+    const url = vUrl(v), wa = "https://wa.me/?text=" + encodeURIComponent(`📢 ${v.t} (${v.c}, ${v.l}) - ${v.v} logon ki awaaz. Video: ${url}`);
+    return `<div class="card"><span class="tag">${esc(v.c)}</span> <b>${esc(v.t)}</b><div class="small">📍 ${esc(v.l)}</div>
+    <video controls preload="none" playsinline poster="${vPoster(v)}" src="${url}"></video>
+    <div class="acts"><button data-v="${v.id}" ${voted[v.id] ? "disabled" : ""}>✊ Main bhi sehmat (${v.v})</button><a class="wa" target="_blank" rel="noopener" href="${wa}">WhatsApp</a></div></div>`;
+  }).join("") || '<div class="card small">Abhi koi awaaz nahi. Pehli awaaz aap uthao.</div>';
+  document.querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+    const v = S.voice.find(x => x.id === b.dataset.v); if (!v || voted[v.id]) return;
+    v.v++; voted[v.id] = 1; save(); drawVoice();
+  });
+}
+$("#vadd").onclick = async () => {
+  const f = $("#vfile").files[0], t = $("#vt").value.trim(), l = $("#vl").value.trim(), msg = $("#msg2");
+  if (!f || !t || !l) { msg.textContent = "Video, samasya aur jagah zaroori hain."; return; }
+  if (f.size > 60e6) { msg.textContent = "Video 60MB se chhota rakho."; return; }
+  $("#vadd").disabled = true; msg.textContent = "Video upload ho raha hai...";
+  try {
+    const i = await up(f, "video");
+    S.voice.push({ id: "v" + Date.now(), i, t, c: $("#vc").value, l, v: 1 }); voted["v" + (Date.now())] = 0;
+    save(); ["#vfile", "#vt", "#vl"].forEach(s => $(s).value = ""); msg.textContent = "Awaaz uth gayi ✓"; drawVoice();
+  } catch (e) { msg.textContent = "Error: " + e.message; }
+  $("#vadd").disabled = false;
+};
+$("#memo").onclick = async () => {
+  const l = S.voice.slice().sort((a, b) => b.v - a.v);
+  if (!l.length) return;
+  const txt = "Gaon ki samasyaon ka summary (sehmat ke hisaab se)\n\n" + l.map((v, n) => `${n + 1}. ${v.t} [${v.c}] - ${v.l} - ${v.v} logon ki sehmat\n   Video: ${vUrl(v)}`).join("\n");
+  try { await navigator.clipboard.writeText(txt); } catch (e) {}
+  window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
+};
+
+// ---------- share ----------
+$("#share").onclick = async () => {
+  const l = location.origin + location.pathname + "#d=" + enc(S); $("#link").textContent = l;
+  try { await navigator.clipboard.writeText(l); $("#link").textContent = "Copy ho gaya: " + l; } catch (e) {}
+};
+
+drawMem(); drawVoice();
+</script>
+</body>
+</html>
